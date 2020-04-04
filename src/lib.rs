@@ -158,6 +158,16 @@ where
         }
     }
 
+    /// Constructor for dual-feature capacity and time based `LruCache`.
+    pub fn with_capacity_and_auto_expiration(capacity: usize) -> LruCache<Key, Value> {
+        LruCache {
+            map: BTreeMap::new(),
+            list: VecDeque::with_capacity(capacity),
+            capacity,
+            time_to_live: Some(Duration::from_secs(0)),
+        }
+    }
+
     /// Inserts a key-value pair into the cache.
     ///
     /// If the key already existed in the cache, the existing value is returned and overwritten in
@@ -174,6 +184,15 @@ where
     /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
     pub fn insert(&mut self, key: Key, value: Value) -> Option<Value> {
         self.notify_insert(key, value).0
+    }
+
+    /// Inserts a key-value pair with expire time into the cache.
+    ///
+    /// If the key already existed in the cache, the existing value is returned and overwritten in
+    /// the cache.  Otherwise, the key-value pair is inserted and `None` is returned.
+    pub fn insert_with_ttl(&mut self, key: Key, value: Value, ttl: Duration) -> Option<Value> {
+        let now = Instant::now();
+        self.do_notify_insert(key, value, now + ttl).0
     }
 
     /// Removes a key-value pair from the cache.
